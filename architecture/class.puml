@@ -1,4 +1,4 @@
-@startuml twitter
+@startuml Twitter
 Title: Twitter
 
 class User{
@@ -19,10 +19,7 @@ class User{
     tweet(tweet: Tweet)
     like(tweet: Tweet)
     retweet(tweet: Tweet)
-
-
 }
-
 
 class Tweet {
     author: User
@@ -33,8 +30,6 @@ class Tweet {
     retweets: [Tweet]
     originalTweet: Tweet
     attachments: []
-
-
 }
 
 @enduml
