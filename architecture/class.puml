@@ -1,6 +1,4 @@
-@startuml
-Title: Tweet
-
+@startuml twitter
 Title: Twitter
 
 class User{
