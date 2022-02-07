@@ -6,6 +6,7 @@ var logger = require('morgan');
 var config = require('./config')
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var tweetRouter = require('./routes/tweetRouter');
 
 var app = express();
 
@@ -21,6 +22,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/tweets', tweetRouter);
 
 
 const mongoose = require('mongoose');
