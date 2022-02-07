@@ -22,10 +22,10 @@ tweetRouter.route('/')
 .post(authenticate.verifyUser, (req,res,next) => {
     Tweet.create({"user": req.user._id, "tweet": req.body.tweet})
     .then((tweet) => {
+        console.log("tweet created")
         res.statusCode = 200;
         res.setHeader("Content-Type", "application/json");
         res.json(tweet);
-        console.log("tweet created")
     },(err) => next(err)).catch((err) => next(err));
 })
 .put(authenticate.verifyUser, (req,res,next) => {
@@ -39,6 +39,54 @@ tweetRouter.route('/')
         res.setHeader('Content-Type', 'application/json');
         res.json(result)
     }, (err) => next(err)).catch((err) => next(err));
+});
+
+tweetRouter.route('/:tweetId')
+.get((req, res, next) => {
+    Tweet.findById(req.params.tweetId)
+    .populate('user', 'name')
+    .then((tweet) => {
+        res.statusCode=200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(tweet)
+    },(err) => next(err)).catch((err) => next(err))
+})
+.post(authenticate.verifyUser, (req, res, next) => {
+    res.statusCode = 403;
+    res.end('POST operation is not supported on /tweets/'+req.params.tweetId);
+})
+.put(authenticate.verifyUser, (req, res, next) => {
+    res.statusCode = 403;
+    res.end('PUT operation is not supported on /tweets/'+req.params.tweetId);
+})
+.delete(authenticate.verifyUser, (req, res, next) =>{
+    Tweet.findOne({user: req.user._id})
+    .then((tweet) => {
+        var tweetIndex = tweet.id.indexOf(req.params.tweetId)
+        console.log(tweet.tweet)
+        console.log(tweetIndex)
+        if(tweet) {
+            if(tweetIndex < 0) {
+                err = new Error('Tweet '+ req.params.tweetId + ' not found');
+                err.statusCode = 404;
+                return next(err);
+            } else {
+                tweet.tweet.splice(tweetIndex, 1);
+                tweet.save()
+                .then((tweet) => {
+                    console.log('Tweet Deleted');
+                    res.statusCode = 200;
+                    res.setHeader('Content-Type', 'application/json');
+                    res.json(tweet);
+                }, (err) => next(err));
+            }
+
+        } else {
+            err = new Error('Tweet not found');
+            err.statusCode = 404;
+            return next(err);
+        }
+    }, (err) => next(err)).catch((err) => next(err))  
 });
 
 module.exports = tweetRouter;
