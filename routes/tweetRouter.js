@@ -89,4 +89,57 @@ tweetRouter.route('/:tweetId')
     }, (err) => next(err)).catch((err) => next(err))  
 });
 
+tweetRouter.route('/:tweetId/replies')
+.get((req, res, next) => {
+    Tweet.findById(req.params.tweetId)
+    .then((tweet) => {
+        if(tweet != null) {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.json(tweet.replies);
+        } else {
+            err = new Error('Tweet '+req.params.tweetId + ' not found');
+            err.status = 404;
+            return next(err)
+        }
+    }, (err) => next(err)).catch((err) => next(err));
+})
+.post(authenticate.verifyUser, (req, res, next) => {
+    Tweet.findById(req.params.tweetId)
+    .then((tweet) => {
+        req.body.user = req.user._id;
+        tweet.replies.push(req.body);
+        tweet.save()
+        .then((tweet) => {
+            res.statusCode = 200;
+            res.setHeader("Content-Type", "application/json");
+            res.json(tweet);
+        }, (err) => next(err)).catch((err) => next(err));
+    })
+})
+.put(authenticate.verifyUser, (req, res, next) => {
+    res.statusCode = 403;
+    res.end("PUT operation is not supported on /tweets/" +req.params.tweetId+"/replies")
+})
+.delete(authenticate.verifyUser, (req, res ,next) => {
+    Tweet.findById(req.params.tweetId)
+    .then((tweet) => {
+        if(tweet != null) {
+            console.log(tweet);
+            for(var i = (tweet.replies.length-1) ; i>=0; i--) {
+                tweet.replies.id(tweet.replies[i]._id).remove();
+            }
+            tweet.save()
+            .then((tweet) => {
+                res.statusCode = 200;
+                res.setHeader("Content-Type" ,"application/json");
+                res.json(tweet);
+            }, (err) => next(err)).catch((err) => next(err));
+        } else {
+            err = new Error("Tweet "+req.params.tweetId + " not found");
+            err.status = 404;
+            return next(err);
+        } 
+    }, (err) => next(err)).catch((err) => next(err));
+})
 module.exports = tweetRouter;
