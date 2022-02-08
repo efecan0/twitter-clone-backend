@@ -1,15 +1,7 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
-
-var replySchema = new Schema({
-    reply: {
-        type: String
-    },
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    }
-}, { timestamps: true })
+var replySchema = require('./reply')
+var favoriteSchema = require('./favorite');
 
 var tweetSchema = new Schema({
     user: {
@@ -20,7 +12,8 @@ var tweetSchema = new Schema({
         type: String,
         require: true
     },
-    replies: [replySchema]
+    replies: [replySchema],
+    favorites: [favoriteSchema]
 },{timestamps: true})
 
 
