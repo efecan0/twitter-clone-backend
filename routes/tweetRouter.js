@@ -141,5 +141,56 @@ tweetRouter.route('/:tweetId/replies')
             return next(err);
         } 
     }, (err) => next(err)).catch((err) => next(err));
+});
+
+tweetRouter.route('/:tweetId/FavoriteTweet')
+.get(authenticate.verifyUser, (req, res, next) => {
+    res.statusCode = 403;
+    res.end('GET operation is not supported on /'+ req.params.tweetId +'/FavoriteTweet')
 })
+.post(authenticate.verifyUser, (req, res, next) => {
+    Tweet.findById(req.params.tweetId)
+    .then((tweet) => {
+
+        for(var i =0 ; i< tweet.favorites.length; i++){
+            if(tweet.favorites[i].user == req.user._id.toString()){
+                var err = new Error('You have already liked the tweet');
+                err.status = 404;
+                return next(err);
+            }
+        }
+
+        req.body.user = req.user._id;
+        tweet.favorites.push(req.body);
+        tweet.save()
+        .then((tweet) => {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.json(tweet)
+        }, (err) => next(err)).catch((err) => next(err))
+    })
+})
+.put(authenticate.verifyUser, (req, res, next) => {
+    res.statusCode = 403;
+    res.end('PUT operation is not supported on /'+ req.params.tweetId + '/FavoriteTweet')
+})
+.delete(authenticate.verifyUser, (req, res, next) => {
+    Tweet.findById(req.params.tweetId)
+    .then((tweet) => {
+        for(var i = 0; i<tweet.favorites.length; i++) {
+            if(tweet.favorites[i].user == req.user._id.toString()){
+                console.log(i)
+                tweet.favorites.splice(i, 1)
+                tweet.save()
+                .then((tweet) => {
+                    console.log('Favorite User Deleted');
+                    res.statusCode = 200;
+                    res.setHeader('Content-Type', 'application/json');
+                    res.json(tweet);
+                }, (err) => next(err))
+            }
+        }
+    }, (err) => next(err)).catch((err) => next(err))
+})
+
 module.exports = tweetRouter;
