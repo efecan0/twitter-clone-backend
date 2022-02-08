@@ -7,6 +7,7 @@ var config = require('./config')
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var tweetRouter = require('./routes/tweetRouter');
+var favoriteRouter = require('./routes/favoriteRouter');
 
 var app = express();
 
@@ -23,7 +24,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/tweets', tweetRouter);
-
+app.use('/favorites', favoriteRouter);
 
 const mongoose = require('mongoose');
 const url = config.mongoUrl;
