@@ -125,7 +125,8 @@ tweetRouter.route('/:tweetId/FavoriteTweet')
 })
 .post(authenticate.verifyUser, async (req, res, next) => {
  
-    const tweet = await Tweet.findById(req.params.tweetId)
+    try{
+        const tweet = await Tweet.findById(req.params.tweetId)
     const userLike = await User.findById(req.user._id);
  
          for(var i =0 ; i< tweet.likes.length; i++){
@@ -143,29 +144,44 @@ tweetRouter.route('/:tweetId/FavoriteTweet')
          await userLike.save()
 
          res.send('LIKED 🥳')   
+    }catch{
+        err = new Error('something problem');
+        err.status = 404;
+        return next(err)    }
   
 })
 .put(authenticate.verifyUser, (req, res, next) => {
     res.statusCode = 403;
     res.end('PUT operation is not supported on /'+ req.params.tweetId + '/FavoriteTweet')
 })
-.delete(authenticate.verifyUser, (req, res, next) => {
-    Tweet.findById(req.params.tweetId)
-    .then((tweet) => {
+.delete(authenticate.verifyUser, async (req, res, next) => {
+    try{
+        const tweet = await Tweet.findById(req.params.tweetId)
+        const user = await User.findById(req.user._id) 
+        console.log(user)   
         for(var i = 0; i<tweet.likes.length; i++) {
             if(tweet.likes[i]._id.toString() == req.user._id.toString()){
-                console.log(i)
-                tweet.likes.splice(i, 1)
-                tweet.save()
-                .then((tweet) => {
-                    console.log('Favorite User Deleted');
-                    res.statusCode = 200;
-                    res.setHeader('Content-Type', 'application/json');
-                    res.json(tweet);
-                }, (err) => next(err))
+                for(var j = 0; j< user.likedTweets.length; j++){
+                    console.log(`user: ${user.likedTweets[j]._id.toString()} ----- tweet: ${tweet.likes[i]._id.toString()}`)
+                    if(user.likedTweets[j]._id.toString() == tweet._id.toString()){
+                        user.likedTweets.splice(j, 1);
+                        tweet.likes.splice(i, 1)
+                        await tweet.save()    
+                        await user.save()
+                        res.statusCode = 200;
+                        return res.send('DISLIKED 🥳'); 
+                    }
+                }
+                
             }
         }
-    }, (err) => next(err)).catch((err) => next(err))
+
+    }catch {
+        err = new Error('something problem');
+        err.status = 404;
+        return next(err) 
+    }
+
 })
 
 module.exports = tweetRouter;
