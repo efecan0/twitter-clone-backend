@@ -19,8 +19,10 @@ tweetRouter.route('/')
         res.json(tweet);
     }, (err) => next(err)).catch((err) => next(err));
 })
-.post(authenticate.verifyUser, (req,res,next) => {
-    Tweet.create({"user": req.user._id, "tweet": req.body.tweet})
+.post(authenticate.verifyUser, async (req,res,next) => {
+   const tweet = await Tweet.create({"user": req.user._id, "body": req.body.body});
+   tweet.originalTweet = tweet._id;
+   tweet.save()
     .then((tweet) => {
         console.log("tweet created")
         res.statusCode = 200;
@@ -45,6 +47,7 @@ tweetRouter.route('/:tweetId')
 .get((req, res, next) => {
     Tweet.findById(req.params.tweetId)
     .populate('user', 'name')
+    .populate('replies', 'user body originalTweet replies')
     .then((tweet) => {
         res.statusCode=200;
         res.setHeader('Content-Type', 'application/json');
@@ -59,39 +62,27 @@ tweetRouter.route('/:tweetId')
     res.statusCode = 403;
     res.end('PUT operation is not supported on /tweets/'+req.params.tweetId);
 })
-.delete(authenticate.verifyUser, (req, res, next) =>{
-    Tweet.findOne({user: req.user._id})
-    .then((tweet) => {
-        var tweetIndex = tweet.id.indexOf(req.params.tweetId)
-        console.log(tweet.tweet)
-        console.log(tweetIndex)
-        if(tweet) {
-            if(tweetIndex < 0) {
-                err = new Error('Tweet '+ req.params.tweetId + ' not found');
-                err.statusCode = 404;
-                return next(err);
-            } else {
-                tweet.tweet.splice(tweetIndex, 1);
-                tweet.save()
-                .then((tweet) => {
-                    console.log('Tweet Deleted');
-                    res.statusCode = 200;
-                    res.setHeader('Content-Type', 'application/json');
-                    res.json(tweet);
-                }, (err) => next(err));
-            }
-
-        } else {
-            err = new Error('Tweet not found');
-            err.statusCode = 404;
-            return next(err);
+.delete(authenticate.verifyUser, async (req, res, next) =>{
+    const deleteTweet = await Tweet.findOneAndRemove({_id: req.params.tweetId})
+    const deleteReply = await Tweet.findOne({ _id: deleteTweet.originalTweet});
+    for(var i = 0; i < deleteReply.replies.length; i++) {
+        if(deleteReply.replies[i]._id.toString() === deleteTweet.id){
+            deleteReply.replies.splice(i, 1);
+            console.log("success")
         }
-    }, (err) => next(err)).catch((err) => next(err))  
+    }
+    deleteReply.save()
+    .then((reply) => {
+        console.log('Tweet deleted, reply deleted');
+        res.setHeader('Content-Type', 'application/json');
+        res.json(reply)
+    })
 });
 
 tweetRouter.route('/:tweetId/replies')
 .get((req, res, next) => {
     Tweet.findById(req.params.tweetId)
+    .populate('replies', 'body user')
     .then((tweet) => {
         if(tweet != null) {
             res.statusCode = 200;
@@ -104,64 +95,44 @@ tweetRouter.route('/:tweetId/replies')
         }
     }, (err) => next(err)).catch((err) => next(err));
 })
-.post(authenticate.verifyUser, (req, res, next) => {
-    Tweet.findById(req.params.tweetId)
+.post(authenticate.verifyUser, async (req, res, next) => {
+    const originalTweet = await Tweet.findById(req.params.tweetId)
+    const reply = await Tweet.create({"user": req.user._id, "body": req.body.body, "originalTweet":originalTweet.originalTweet})
+    
+
+    originalTweet.replies.push(reply);
+    originalTweet.save()
     .then((tweet) => {
-        req.body.user = req.user._id;
-        tweet.replies.push(req.body);
-        tweet.save()
-        .then((tweet) => {
-            res.statusCode = 200;
-            res.setHeader("Content-Type", "application/json");
-            res.json(tweet);
-        }, (err) => next(err)).catch((err) => next(err));
-    })
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(tweet)
+    }, (err) => next(err)).catch((err) => next(err))
 })
 .put(authenticate.verifyUser, (req, res, next) => {
     res.statusCode = 403;
     res.end("PUT operation is not supported on /tweets/" +req.params.tweetId+"/replies")
 })
 .delete(authenticate.verifyUser, (req, res ,next) => {
-    Tweet.findById(req.params.tweetId)
-    .then((tweet) => {
-        if(tweet != null) {
-            console.log(tweet);
-            for(var i = (tweet.replies.length-1) ; i>=0; i--) {
-                tweet.replies.id(tweet.replies[i]._id).remove();
-            }
-            tweet.save()
-            .then((tweet) => {
-                res.statusCode = 200;
-                res.setHeader("Content-Type" ,"application/json");
-                res.json(tweet);
-            }, (err) => next(err)).catch((err) => next(err));
-        } else {
-            err = new Error("Tweet "+req.params.tweetId + " not found");
-            err.status = 404;
-            return next(err);
-        } 
-    }, (err) => next(err)).catch((err) => next(err));
+   res.status= 403;
+   res.end('DELETE operation is not supported on tweets/'+ req.params.tweetId+'/replies')
 });
 
 tweetRouter.route('/:tweetId/FavoriteTweet')
 .get(authenticate.verifyUser, (req, res, next) => {
     res.statusCode = 403;
-    res.end('GET operation is not supported on /'+ req.params.tweetId +'/FavoriteTweet')
+    res.end('GET operation is not supported on tweets/'+ req.params.tweetId +'/FavoriteTweet')
 })
 .post(authenticate.verifyUser, (req, res, next) => {
     Tweet.findById(req.params.tweetId)
     .then((tweet) => {
-
-        for(var i =0 ; i< tweet.favorites.length; i++){
-            if(tweet.favorites[i].user == req.user._id.toString()){
+        for(var i =0 ; i< tweet.likes.length; i++){
+            if(tweet.likes[i]._id.toString() == req.user._id.toString()){
                 var err = new Error('You have already liked the tweet');
                 err.status = 404;
                 return next(err);
             }
         }
-
-        req.body.user = req.user._id;
-        tweet.favorites.push(req.body);
+        tweet.likes.push(req.user);
         tweet.save()
         .then((tweet) => {
             res.statusCode = 200;
@@ -177,10 +148,10 @@ tweetRouter.route('/:tweetId/FavoriteTweet')
 .delete(authenticate.verifyUser, (req, res, next) => {
     Tweet.findById(req.params.tweetId)
     .then((tweet) => {
-        for(var i = 0; i<tweet.favorites.length; i++) {
-            if(tweet.favorites[i].user == req.user._id.toString()){
+        for(var i = 0; i<tweet.likes.length; i++) {
+            if(tweet.likes[i]._id.toString() == req.user._id.toString()){
                 console.log(i)
-                tweet.favorites.splice(i, 1)
+                tweet.likes.splice(i, 1)
                 tweet.save()
                 .then((tweet) => {
                     console.log('Favorite User Deleted');
