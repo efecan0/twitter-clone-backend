@@ -8,12 +8,33 @@ var tweetSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
-    tweet: {
+    body: {
         type: String,
         require: true
     },
-    replies: [replySchema],
-    favorites: [favoriteSchema]
+    attachment:[],
+    originalTweet:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Tweet'
+    },   
+    retweets:[
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Tweet'
+        }
+    ],
+    replies: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Tweet'
+        }
+    ],
+    likes: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }
+    ]
 },{timestamps: true})
 
 
