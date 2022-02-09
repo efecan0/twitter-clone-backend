@@ -3,7 +3,8 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const authenticate = require('../authenticate');
 
-const Tweet = require('../models/tweet')
+const Tweet = require('../models/tweet');
+const User = require('../models/user');
 
 const tweetRouter = express.Router();
 
@@ -46,7 +47,7 @@ tweetRouter.route('/')
 tweetRouter.route('/:tweetId')
 .get((req, res, next) => {
     Tweet.findById(req.params.tweetId)
-    .populate('user', 'name')
+    .populate('user', 'name likedTweets')
     .populate('replies', 'user body originalTweet replies')
     .then((tweet) => {
         res.statusCode=200;
@@ -122,24 +123,27 @@ tweetRouter.route('/:tweetId/FavoriteTweet')
     res.statusCode = 403;
     res.end('GET operation is not supported on tweets/'+ req.params.tweetId +'/FavoriteTweet')
 })
-.post(authenticate.verifyUser, (req, res, next) => {
-    Tweet.findById(req.params.tweetId)
-    .then((tweet) => {
-        for(var i =0 ; i< tweet.likes.length; i++){
-            if(tweet.likes[i]._id.toString() == req.user._id.toString()){
-                var err = new Error('You have already liked the tweet');
-                err.status = 404;
-                return next(err);
-            }
-        }
-        tweet.likes.push(req.user);
-        tweet.save()
-        .then((tweet) => {
-            res.statusCode = 200;
-            res.setHeader('Content-Type', 'application/json');
-            res.json(tweet)
-        }, (err) => next(err)).catch((err) => next(err))
-    })
+.post(authenticate.verifyUser, async (req, res, next) => {
+ 
+    const tweet = await Tweet.findById(req.params.tweetId)
+    const userLike = await User.findById(req.user._id);
+ 
+         for(var i =0 ; i< tweet.likes.length; i++){
+             if(tweet.likes[i]._id.toString() == req.user._id.toString()){
+                 var err = new Error('You have already liked the tweet');
+                 err.status = 404;
+                 return next(err);
+             }
+         }
+ 
+         userLike.likedTweets.push(tweet)
+         tweet.likes.push(req.user);
+         
+         await tweet.save()
+         await userLike.save()
+
+         res.send('LIKED 🥳')   
+  
 })
 .put(authenticate.verifyUser, (req, res, next) => {
     res.statusCode = 403;
