@@ -29,6 +29,30 @@ var User = new Schema({
         type: String,
         default: ''
     },
+    following:[
+            {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }
+],
+    followers:[
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+    }
+],
+    tweets: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Tweet' 
+        }
+    ],
+    likedTweets: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Tweet'
+        }
+    ],
     admin:{
         type: Boolean,
         default: false
