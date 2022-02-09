@@ -1,7 +1,5 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
-var replySchema = require('./reply')
-var favoriteSchema = require('./favorite');
 
 var tweetSchema = new Schema({
     user: {
