@@ -162,7 +162,6 @@ tweetRouter.route('/:tweetId/FavoriteTweet')
         for(var i = 0; i<tweet.likes.length; i++) {
             if(tweet.likes[i]._id.toString() == req.user._id.toString()){
                 for(var j = 0; j< user.likedTweets.length; j++){
-                    console.log(`user: ${user.likedTweets[j]._id.toString()} ----- tweet: ${tweet.likes[i]._id.toString()}`)
                     if(user.likedTweets[j]._id.toString() == tweet._id.toString()){
                         user.likedTweets.splice(j, 1);
                         tweet.likes.splice(i, 1)
