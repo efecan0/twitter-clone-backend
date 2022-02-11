@@ -60,5 +60,20 @@ var User = new Schema({
 });
 
 User.plugin(passportLocalMongoose);
+var UserSchema = mongoose.model('User', User);
 
-module.exports = mongoose.model('User', User);
+User.pre('deleteOne', function (next) {
+    const personId = this.getQuery()["_id"];
+    mongoose.model("User").deleteOne({'following': {_id: personId}}, function (err, result) {
+      if (err) {
+        console.log(`[error] ${err}`);
+        next(err);
+      } else {
+        console.log('success');
+        next();
+      }
+    });
+  });
+
+
+module.exports = UserSchema;

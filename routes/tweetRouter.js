@@ -170,17 +170,14 @@ tweetRouter.route('/:tweetId/FavoriteTweet')
                         res.statusCode = 200;
                         return res.send('DISLIKED 🥳'); 
                     }
-                }
-                
+                }       
             }
         }
-
     }catch {
         err = new Error('something problem');
         err.status = 404;
         return next(err) 
     }
-
 })
 
 module.exports = tweetRouter;
